@@ -6,7 +6,6 @@ from fastapi import FastAPI, HTTPException, Header, Depends, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel
-
 LLM_API_KEY = os.environ.get("LLM_API_KEY", "").strip()
 LLM_BASE_URL = os.environ.get("LLM_BASE_URL", "https://api.groq.com/openai/v1").strip().rstrip("/")
 LLM_MODEL = os.environ.get("LLM_MODEL", "llama-3.3-70b-versatile").strip()

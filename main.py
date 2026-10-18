@@ -5,12 +5,12 @@ from fastapi import FastAPI, HTTPException, Header, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-LLM_API_KEY = os.environ.get("LLM_API_KEY", "")
-LLM_BASE_URL = os.environ.get("LLM_BASE_URL", "https://api.groq.com/openai/v1")
-LLM_MODEL = os.environ.get("LLM_MODEL", "llama-3.3-70b-versatile")  # check your provider's current model names
-SUPABASE_URL = os.environ.get("SUPABASE_URL", "").rstrip("/")
-SUPABASE_KEY = os.environ.get("SUPABASE_SERVICE_KEY", "")
-APP_ACCESS_CODE = os.environ.get("APP_ACCESS_CODE", "")
+LLM_API_KEY = os.environ.get("LLM_API_KEY", "").strip()
+LLM_BASE_URL = os.environ.get("LLM_BASE_URL", "https://api.groq.com/openai/v1").strip().rstrip("/")
+LLM_MODEL = os.environ.get("LLM_MODEL", "llama-3.3-70b-versatile").strip()  # check your provider's current model names
+SUPABASE_URL = os.environ.get("SUPABASE_URL", "").strip().rstrip("/").removesuffix("/rest/v1")
+SUPABASE_KEY = os.environ.get("SUPABASE_SERVICE_KEY", "").strip()
+APP_ACCESS_CODE = os.environ.get("APP_ACCESS_CODE", "").strip()
 ALLOWED_ORIGIN = os.environ.get("ALLOWED_ORIGIN", "*")
 
 app = FastAPI(title="Conceptz PA")
@@ -32,7 +32,8 @@ async def generate(messages: list[dict]) -> str:
                          headers={"Authorization": f"Bearer {LLM_API_KEY}"},
                          json={"model": LLM_MODEL, "messages": messages, "temperature": 0.4})
     if r.status_code != 200:
-        raise HTTPException(502, "Model provider error")
+        print(f"LLM ERROR {r.status_code}: {r.text[:300]}", flush=True)
+        raise HTTPException(502, f"AI provider said {r.status_code}: {r.text[:200]}")
     return r.json()["choices"][0]["message"]["content"]
 
 
@@ -64,7 +65,8 @@ async def sb(method: str, path: str, **kw):
     async with httpx.AsyncClient(timeout=20) as c:
         r = await c.request(method, f"{SUPABASE_URL}/rest/v1/{path}", headers=sb_headers(), **kw)
     if r.status_code >= 300:
-        raise HTTPException(502, "Database error")
+        print(f"DATABASE ERROR {r.status_code}: {r.text[:300]}", flush=True)
+        raise HTTPException(502, f"Database said {r.status_code}: {r.text[:200]}")
     return r.json()
 
 
